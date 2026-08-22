@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "npx wrangler pages dev .",
+    "deploy": "npx wrangler pages deploy . --project-name cloudflare-hello-world"
+  },
+  "devDependencies": {
+    "wrangler": "^4.18.0"
+  }
+}
