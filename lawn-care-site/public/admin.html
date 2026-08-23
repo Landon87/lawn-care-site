@@ -124,6 +124,7 @@
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold">All Form Submissions</h3>
                             <div class="flex gap-2">
+                                <input type="text" id="searchFilter" placeholder="Search name, phone..." class="border rounded-lg px-3 py-2 text-sm" onkeyup="loadSubmissions()">
                                 <select id="statusFilter" class="border rounded-lg px-3 py-2 text-sm" onchange="loadSubmissions()">
                                     <option value="all">All Status</option>
                                     <option value="new">New</option>
@@ -138,13 +139,13 @@
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Name</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('name')">Name ↕</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Phone</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Property</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('date')">Date ↕</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
@@ -307,11 +308,42 @@
         function loadSubmissions() {
             const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
             const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            const searchFilter = document.getElementById('searchFilter')?.value.toLowerCase() || '';
             
             let filtered = submissions;
+            
+            // Filter by status
             if (statusFilter !== 'all') {
-                filtered = submissions.filter(s => s.status === statusFilter);
+                filtered = filtered.filter(s => s.status === statusFilter);
             }
+            
+            // Filter by search
+            if (searchFilter) {
+                filtered = filtered.filter(s => 
+                    s.name.toLowerCase().includes(searchFilter) ||
+                    s.phone.includes(searchFilter) ||
+                    (s.email && s.email.toLowerCase().includes(searchFilter)) ||
+                    s.location.toLowerCase().includes(searchFilter)
+                );
+            }
+            
+            // Sort
+            filtered.sort((a, b) => {
+                let aVal = a[sortField];
+                let bVal = b[sortField];
+                
+                if (sortField === 'date') {
+                    aVal = new Date(aVal);
+                    bVal = new Date(bVal);
+                } else {
+                    aVal = (aVal || '').toString().toLowerCase();
+                    bVal = (bVal || '').toString().toLowerCase();
+                }
+                
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
             
             const tbody = document.getElementById('submissionsTable');
             
@@ -459,6 +491,20 @@
         
         // Load submissions on page load if on submissions tab
         if (document.getElementById('submissions').classList.contains('active')) {
+            loadSubmissions();
+        }
+        
+        // Sorting
+        let sortField = 'date';
+        let sortDirection = 'desc';
+        
+        function sortSubmissions(field) {
+            if (sortField === field) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortDirection = 'asc';
+            }
             loadSubmissions();
         }
         
