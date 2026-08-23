@@ -183,39 +183,70 @@
 
                 <!-- Settings Tab -->
                 <div id="settings" class="tab-content">
-                    <div class="max-w-2xl">
+                    <div class="max-w-2xl space-y-6">
+                        <!-- Business Info -->
                         <div class="bg-white rounded-xl shadow-sm p-6 space-y-6">
                             <h3 class="text-lg font-semibold mb-4">Business Settings</h3>
                             
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                                    <input type="text" value="Emeralds Cuts Lawn Services" class="w-full border rounded-lg px-3 py-2">
+                                    <input type="text" id="bizName" value="Emeralds Cuts Lawn Services" class="w-full border rounded-lg px-3 py-2">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                                    <input type="tel" value="(904) 555-0123" class="w-full border rounded-lg px-3 py-2">
+                                    <input type="tel" id="bizPhone" value="(904) 555-0123" class="w-full border rounded-lg px-3 py-2">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                    <input type="email" value="makersmarg79@gmail.com" class="w-full border rounded-lg px-3 py-2">
+                                    <input type="email" id="bizEmail" value="makersmarg79@gmail.com" class="w-full border rounded-lg px-3 py-2">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Business Hours</label>
-                                    <input type="text" value="Mon-Sat: 8AM - 6PM" class="w-full border rounded-lg px-3 py-2">
+                                    <input type="text" id="bizHours" value="Mon-Sat: 8AM - 6PM" class="w-full border rounded-lg px-3 py-2">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Service Areas</label>
-                                    <textarea class="w-full border rounded-lg px-3 py-2 h-24">Jacksonville, Macclenny, St. Augustine, Yulee, Stance, Jax Beach, Middleburg</textarea>
+                                    <textarea id="bizAreas" class="w-full border rounded-lg px-3 py-2 h-24">Jacksonville, Macclenny, St. Augustine, Yulee, Stance, Jax Beach, Middleburg</textarea>
                                 </div>
                             </div>
                             
                             <div class="pt-4 border-t">
-                                <button class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition">Save Changes</button>
+                                <button onclick="saveSettings()" class="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition">Save Changes</button>
+                                <span id="saveMessage" class="ml-3 text-sm text-green-600 hidden">Saved!</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Management -->
+                        <div class="bg-white rounded-xl shadow-sm p-6">
+                            <h3 class="text-lg font-semibold mb-4">Data Management</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium">Export All Data</p>
+                                        <p class="text-sm text-gray-500">Download JSON backup</p>
+                                    </div>
+                                    <button onclick="exportAllData()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">Export</button>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium">Import Data</p>
+                                        <p class="text-sm text-gray-500">Restore from JSON backup</p>
+                                    </div>
+                                    <input type="file" id="importFile" accept=".json" onchange="importData(this)" class="hidden">
+                                    <button onclick="document.getElementById('importFile').click()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">Import</button>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-red-600">Clear All Data</p>
+                                        <p class="text-sm text-red-400">Delete all submissions permanently</p>
+                                    </div>
+                                    <button onclick="clearAllData()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">Clear</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -508,12 +539,91 @@
             loadSubmissions();
         }
         
+        // Settings
+        function saveSettings() {
+            const settings = {
+                name: document.getElementById('bizName').value,
+                phone: document.getElementById('bizPhone').value,
+                email: document.getElementById('bizEmail').value,
+                hours: document.getElementById('bizHours').value,
+                areas: document.getElementById('bizAreas').value
+            };
+            localStorage.setItem('businessSettings', JSON.stringify(settings));
+            
+            const msg = document.getElementById('saveMessage');
+            msg.classList.remove('hidden');
+            setTimeout(() => msg.classList.add('hidden'), 2000);
+        }
+        
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('businessSettings') || '{}');
+            if (settings.name) document.getElementById('bizName').value = settings.name;
+            if (settings.phone) document.getElementById('bizPhone').value = settings.phone;
+            if (settings.email) document.getElementById('bizEmail').value = settings.email;
+            if (settings.hours) document.getElementById('bizHours').value = settings.hours;
+            if (settings.areas) document.getElementById('bizAreas').value = settings.areas;
+        }
+        
+        // Data management
+        function exportAllData() {
+            const data = {
+                submissions: JSON.parse(localStorage.getItem('bookingSubmissions') || '[]'),
+                settings: JSON.parse(localStorage.getItem('businessSettings') || '{}'),
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `emeralds-cuts-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.submissions) {
+                        localStorage.setItem('bookingSubmissions', JSON.stringify(data.submissions));
+                    }
+                    if (data.settings) {
+                        localStorage.setItem('businessSettings', JSON.stringify(data.settings));
+                    }
+                    alert('Data imported successfully!');
+                    location.reload();
+                } catch (err) {
+                    alert('Invalid file format');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function clearAllData() {
+            if (!confirm('WARNING: This will delete ALL submissions. This cannot be undone. Are you sure?')) return;
+            if (!confirm('Really sure? All customer data will be lost.')) return;
+            
+            localStorage.removeItem('bookingSubmissions');
+            alert('All data cleared');
+            location.reload();
+        }
+        
+        // Load settings on page load
+        loadSettings();
+        
         // Load customers when tab is clicked
         const originalSwitchTab = switchTab;
         switchTab = function(tabName) {
             originalSwitchTab(tabName);
             if (tabName === 'customers') {
                 loadCustomers();
+            }
+            if (tabName === 'settings') {
+                loadSettings();
             }
         };
     </script>
