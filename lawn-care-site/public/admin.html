@@ -23,31 +23,72 @@
             background-color: #065f46;
             border-right: 4px solid #34d399;
         }
+        
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 50;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0 !important;
+            }
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 40;
+            }
+            .mobile-overlay.active {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" onclick="toggleSidebar()"></div>
+        
         <!-- Sidebar -->
-        <aside class="bg-emerald-900 text-white w-64 fixed h-full">
-            <div class="p-4">
-                <h1 class="text-xl font-bold">Emeralds Cuts</h1>
-                <p class="text-emerald-300 text-sm">Admin Dashboard</p>
+        <aside id="sidebar" class="bg-emerald-900 text-white w-64 fixed h-full sidebar">
+            <div class="p-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold">Emeralds Cuts</h1>
+                    <p class="text-emerald-300 text-sm">Admin Dashboard</p>
+                </div>
+                <button onclick="toggleSidebar()" class="md:hidden text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
             <nav class="mt-8">
-                <a href="#" onclick="switchTab('dashboard')" class="nav-item active block px-4 py-3 hover:bg-emerald-800 transition">Dashboard</a>
-                <a href="#" onclick="switchTab('submissions')" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Form Submissions</a>
-                <a href="#" onclick="switchTab('customers')" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Customers</a>
-                <a href="#" onclick="switchTab('settings')" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Settings</a>
+                <a href="#" onclick="switchTab('dashboard'); toggleSidebar()" class="nav-item active block px-4 py-3 hover:bg-emerald-800 transition">Dashboard</a>
+                <a href="#" onclick="switchTab('submissions'); toggleSidebar()" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Form Submissions</a>
+                <a href="#" onclick="switchTab('customers'); toggleSidebar()" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Customers</a>
+                <a href="#" onclick="switchTab('settings'); toggleSidebar()" class="nav-item block px-4 py-3 hover:bg-emerald-800 transition">Settings</a>
             </nav>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 ml-64">
+        <main class="flex-1 ml-0 md:ml-64">
             <!-- Header -->
             <header class="bg-white shadow-sm p-4 flex items-center justify-between">
-                <h2 id="page-title" class="text-2xl font-bold text-gray-800">Dashboard</h2>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="md:hidden text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <h2 id="page-title" class="text-xl md:text-2xl font-bold text-gray-800">Dashboard</h2>
+                </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-500">Welcome, Admin</span>
+                    <span class="text-sm text-gray-500 hidden sm:inline">Welcome, Admin</span>
                     <div class="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold">A</div>
                     <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700">Logout</button>
                 </div>
@@ -57,7 +98,7 @@
                 <!-- Dashboard Tab -->
                 <div id="dashboard" class="tab-content active">
                     <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -139,14 +180,14 @@
                             <table class="w-full">
                                 <thead>
                                     <tr class="border-b bg-gray-50">
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('name')">Name ↕</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Phone</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Property</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('date')">Date ↕</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('name')">Name ↕</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500 hidden md:table-cell">Phone</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500 hidden lg:table-cell">Email</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500 hidden sm:table-cell">Location</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500">Property</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500">Status</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-100" onclick="sortSubmissions('date')">Date ↕</th>
+                                        <th class="text-left py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="submissionsTable">
@@ -256,6 +297,12 @@
     </div>
 
     <script>
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.querySelector('.mobile-overlay').classList.toggle('active');
+        }
+        
         // Check if logged in
         if (!localStorage.getItem('adminLoggedIn')) {
             showLogin();
@@ -385,11 +432,11 @@
             
             tbody.innerHTML = filtered.reverse().map(sub => `
                 <tr class="border-b hover:bg-gray-50">
-                    <td class="py-3 px-4 font-medium">${sub.name}</td>
-                    <td class="py-3 px-4">${sub.phone}</td>
-                    <td class="py-3 px-4">${sub.email || '-'}</td>
-                    <td class="py-3 px-4">${sub.location}</td>
-                    <td class="py-3 px-4">${sub.propertyType}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-sm md:text-base font-medium">${sub.name}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-sm md:text-base hidden md:table-cell">${sub.phone}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-sm md:text-base hidden lg:table-cell">${sub.email || '-'}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-sm md:text-base hidden sm:table-cell">${sub.location}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-sm md:text-base">${sub.propertyType}</td>
                     <td class="py-3 px-4">
                         <select onchange="updateStatus(${sub.id}, this.value)" class="text-xs border rounded px-2 py-1">
                             <option value="new" ${sub.status === 'new' ? 'selected' : ''}>New</option>
@@ -398,9 +445,9 @@
                             <option value="completed" ${sub.status === 'completed' ? 'selected' : ''}>Completed</option>
                         </select>
                     </td>
-                    <td class="py-3 px-4 text-sm text-gray-500">${new Date(sub.date).toLocaleDateString()}</td>
-                    <td class="py-3 px-4">
-                        <button onclick="deleteSubmission(${sub.id})" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
+                    <td class="py-2 px-2 md:py-3 md:px-4 text-xs md:text-sm text-gray-500">${new Date(sub.date).toLocaleDateString()}</td>
+                    <td class="py-2 px-2 md:py-3 md:px-4">
+                        <button onclick="deleteSubmission(${sub.id})" class="text-red-500 hover:text-red-700 text-xs md:text-sm">Delete</button>
                     </td>
                 </tr>
             `).join('');
