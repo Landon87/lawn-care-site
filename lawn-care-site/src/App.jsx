@@ -110,6 +110,17 @@ Additional Notes:
 ${formData.notes}
     `.trim()
 
+    // Store in localStorage for admin dashboard
+    const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]')
+    submissions.push({
+      id: Date.now(),
+      ...formData,
+      date: new Date().toISOString(),
+      status: 'new'
+    })
+    localStorage.setItem('bookingSubmissions', JSON.stringify(submissions))
+    
+    // Also send email
     window.location.href = `mailto:makersmarg79@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     
     setSubmitted(true)

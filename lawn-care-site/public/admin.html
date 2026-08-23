@@ -61,7 +61,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-sm text-gray-500">Total Submissions</p>
-                                    <p class="text-2xl font-bold text-gray-800">24</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="totalSubmissions">0</p>
                                 </div>
                                 <div class="bg-blue-500 p-3 rounded-lg text-white">📊</div>
                             </div>
@@ -69,8 +69,8 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-500">This Week</p>
-                                    <p class="text-2xl font-bold text-gray-800">5</p>
+                                    <p class="text-sm text-gray-500">New Leads</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="newLeads">0</p>
                                 </div>
                                 <div class="bg-green-500 p-3 rounded-lg text-white">📅</div>
                             </div>
@@ -78,8 +78,8 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-500">Conversion Rate</p>
-                                    <p class="text-2xl font-bold text-gray-800">68%</p>
+                                    <p class="text-sm text-gray-500">Contacted</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="contactedCount">0</p>
                                 </div>
                                 <div class="bg-purple-500 p-3 rounded-lg text-white">📈</div>
                             </div>
@@ -87,8 +87,8 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-500">Avg Response</p>
-                                    <p class="text-2xl font-bold text-gray-800">2.3 hrs</p>
+                                    <p class="text-sm text-gray-500">Scheduled</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="scheduledCount">0</p>
                                 </div>
                                 <div class="bg-orange-500 p-3 rounded-lg text-white">⏱️</div>
                             </div>
@@ -109,28 +109,8 @@
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4">John Smith</td>
-                                        <td class="py-3 px-4">(904) 555-0101</td>
-                                        <td class="py-3 px-4">Residential</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">New</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-22</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4">Sarah Johnson</td>
-                                        <td class="py-3 px-4">(904) 555-0102</td>
-                                        <td class="py-3 px-4">Commercial</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Contacted</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-21</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4">Mike Davis</td>
-                                        <td class="py-3 px-4">(904) 555-0103</td>
-                                        <td class="py-3 px-4">Residential</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Scheduled</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-20</td>
-                                    </tr>
+                                <tbody id="recentSubmissionsTable">
+                                    <tr><td colspan="5" class="py-8 text-center text-gray-500">No submissions yet</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -143,14 +123,14 @@
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold">All Form Submissions</h3>
                             <div class="flex gap-2">
-                                <select class="border rounded-lg px-3 py-2 text-sm">
-                                    <option>All Status</option>
-                                    <option>New</option>
-                                    <option>Contacted</option>
-                                    <option>Scheduled</option>
-                                    <option>Completed</option>
+                                <select id="statusFilter" class="border rounded-lg px-3 py-2 text-sm" onchange="loadSubmissions()">
+                                    <option value="all">All Status</option>
+                                    <option value="new">New</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="completed">Completed</option>
                                 </select>
-                                <input type="text" placeholder="Search..." class="border rounded-lg px-3 py-2 text-sm">
+                                <button onclick="exportSubmissions()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-600">Export CSV</button>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -161,35 +141,14 @@
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Phone</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Property</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">John Smith</td>
-                                        <td class="py-3 px-4">(904) 555-0101</td>
-                                        <td class="py-3 px-4">john@email.com</td>
-                                        <td class="py-3 px-4">Jacksonville</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">New</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-22</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">Sarah Johnson</td>
-                                        <td class="py-3 px-4">(904) 555-0102</td>
-                                        <td class="py-3 px-4">-</td>
-                                        <td class="py-3 px-4">Macclenny</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Contacted</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-21</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">Mike Davis</td>
-                                        <td class="py-3 px-4">(904) 555-0103</td>
-                                        <td class="py-3 px-4">mike@email.com</td>
-                                        <td class="py-3 px-4">St. Augustine</td>
-                                        <td class="py-3 px-4"><span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Scheduled</span></td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-20</td>
-                                    </tr>
+                                <tbody id="submissionsTable">
+                                    <tr><td colspan="8" class="py-8 text-center text-gray-500">Loading submissions...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -208,35 +167,12 @@
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Phone</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Location</th>
-                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Visits</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Submissions</th>
                                         <th class="text-left py-3 px-4 text-sm font-medium text-gray-500">Last Contact</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">John Smith</td>
-                                        <td class="py-3 px-4">(904) 555-0101</td>
-                                        <td class="py-3 px-4">john@email.com</td>
-                                        <td class="py-3 px-4">Jacksonville</td>
-                                        <td class="py-3 px-4">3</td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-22</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">Sarah Johnson</td>
-                                        <td class="py-3 px-4">(904) 555-0102</td>
-                                        <td class="py-3 px-4">-</td>
-                                        <td class="py-3 px-4">Macclenny</td>
-                                        <td class="py-3 px-4">1</td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-21</td>
-                                    </tr>
-                                    <tr class="border-b hover:bg-gray-50">
-                                        <td class="py-3 px-4 font-medium">Mike Davis</td>
-                                        <td class="py-3 px-4">(904) 555-0103</td>
-                                        <td class="py-3 px-4">mike@email.com</td>
-                                        <td class="py-3 px-4">St. Augustine</td>
-                                        <td class="py-3 px-4">5</td>
-                                        <td class="py-3 px-4 text-sm text-gray-500">2026-08-20</td>
-                                    </tr>
+                                <tbody id="customersTable">
+                                    <tr><td colspan="6" class="py-8 text-center text-gray-500">No customers yet</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -314,7 +250,173 @@
                 'settings': 'Settings'
             };
             document.getElementById('page-title').textContent = titles[tabName];
+            
+            // Load data if submissions tab
+            if (tabName === 'submissions') {
+                loadSubmissions();
+            }
         }
+        
+        // Load submissions from localStorage
+        function loadSubmissions() {
+            const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
+            const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+            
+            let filtered = submissions;
+            if (statusFilter !== 'all') {
+                filtered = submissions.filter(s => s.status === statusFilter);
+            }
+            
+            const tbody = document.getElementById('submissionsTable');
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No submissions found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.reverse().map(sub => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4 font-medium">${sub.name}</td>
+                    <td class="py-3 px-4">${sub.phone}</td>
+                    <td class="py-3 px-4">${sub.email || '-'}</td>
+                    <td class="py-3 px-4">${sub.location}</td>
+                    <td class="py-3 px-4">${sub.propertyType}</td>
+                    <td class="py-3 px-4">
+                        <select onchange="updateStatus(${sub.id}, this.value)" class="text-xs border rounded px-2 py-1">
+                            <option value="new" ${sub.status === 'new' ? 'selected' : ''}>New</option>
+                            <option value="contacted" ${sub.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+                            <option value="scheduled" ${sub.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+                            <option value="completed" ${sub.status === 'completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${new Date(sub.date).toLocaleDateString()}</td>
+                    <td class="py-3 px-4">
+                        <button onclick="deleteSubmission(${sub.id})" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update dashboard stats
+            document.getElementById('totalSubmissions').textContent = submissions.length;
+            document.getElementById('newLeads').textContent = submissions.filter(s => s.status === 'new').length;
+            document.getElementById('contactedCount').textContent = submissions.filter(s => s.status === 'contacted').length;
+            document.getElementById('scheduledCount').textContent = submissions.filter(s => s.status === 'scheduled').length;
+            
+            // Update recent submissions table on dashboard
+            const recentTable = document.getElementById('recentSubmissionsTable');
+            if (recentTable) {
+                const recent = submissions.slice(-5).reverse();
+                if (recent.length === 0) {
+                    recentTable.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">No submissions yet</td></tr>';
+                } else {
+                    recentTable.innerHTML = recent.map(sub => `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="py-3 px-4">${sub.name}</td>
+                            <td class="py-3 px-4">${sub.phone}</td>
+                            <td class="py-3 px-4">${sub.propertyType}</td>
+                            <td class="py-3 px-4"><span class="px-2 py-1 bg-${sub.status === 'new' ? 'blue' : sub.status === 'contacted' ? 'yellow' : sub.status === 'scheduled' ? 'green' : 'gray'}-100 text-${sub.status === 'new' ? 'blue' : sub.status === 'contacted' ? 'yellow' : sub.status === 'scheduled' ? 'green' : 'gray'}-800 rounded-full text-xs">${sub.status}</span></td>
+                            <td class="py-3 px-4 text-sm text-gray-500">${new Date(sub.date).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+        
+        function updateStatus(id, status) {
+            const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
+            const sub = submissions.find(s => s.id === id);
+            if (sub) {
+                sub.status = status;
+                localStorage.setItem('bookingSubmissions', JSON.stringify(submissions));
+            }
+        }
+        
+        function deleteSubmission(id) {
+            if (!confirm('Delete this submission?')) return;
+            const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
+            const filtered = submissions.filter(s => s.id !== id);
+            localStorage.setItem('bookingSubmissions', JSON.stringify(filtered));
+            loadSubmissions();
+        }
+        
+        function exportSubmissions() {
+            const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
+            if (submissions.length === 0) {
+                alert('No submissions to export');
+                return;
+            }
+            
+            const csv = [
+                ['Name', 'Phone', 'Email', 'Property Type', 'Location', 'Consultation', 'Maintenance', 'Notes', 'Status', 'Date'].join(','),
+                ...submissions.map(s => [
+                    s.name, s.phone, s.email || '', s.propertyType, s.location, 
+                    s.consultation, s.maintenance ? 'Yes' : 'No', 
+                    (s.notes || '').replace(/,/g, ' '), s.status, s.date
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `submissions-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+        
+        // Load customers from submissions
+        function loadCustomers() {
+            const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]');
+            const customersTable = document.getElementById('customersTable');
+            
+            if (submissions.length === 0) {
+                customersTable.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-500">No customers yet</td></tr>';
+                return;
+            }
+            
+            // Group by phone number
+            const customers = {};
+            submissions.forEach(sub => {
+                if (!customers[sub.phone]) {
+                    customers[sub.phone] = {
+                        name: sub.name,
+                        phone: sub.phone,
+                        email: sub.email,
+                        location: sub.location,
+                        count: 0,
+                        lastDate: sub.date
+                    };
+                }
+                customers[sub.phone].count++;
+                if (new Date(sub.date) > new Date(customers[sub.phone].lastDate)) {
+                    customers[sub.phone].lastDate = sub.date;
+                }
+            });
+            
+            customersTable.innerHTML = Object.values(customers).map(c => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="py-3 px-4 font-medium">${c.name}</td>
+                    <td class="py-3 px-4">${c.phone}</td>
+                    <td class="py-3 px-4">${c.email || '-'}</td>
+                    <td class="py-3 px-4">${c.location}</td>
+                    <td class="py-3 px-4">${c.count}</td>
+                    <td class="py-3 px-4 text-sm text-gray-500">${new Date(c.lastDate).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load submissions on page load if on submissions tab
+        if (document.getElementById('submissions').classList.contains('active')) {
+            loadSubmissions();
+        }
+        
+        // Load customers when tab is clicked
+        const originalSwitchTab = switchTab;
+        switchTab = function(tabName) {
+            originalSwitchTab(tabName);
+            if (tabName === 'customers') {
+                loadCustomers();
+            }
+        };
     </script>
 </body>
 </html>
