@@ -275,6 +275,13 @@
                                 </div>
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div>
+                                        <p class="font-medium">Export as CSV</p>
+                                        <p class="text-sm text-gray-500">Download spreadsheet format</p>
+                                    </div>
+                                    <button onclick="exportSubmissions()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">Export CSV</button>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div>
                                         <p class="font-medium">Import Data</p>
                                         <p class="text-sm text-gray-500">Restore from JSON backup</p>
                                     </div>
@@ -611,6 +618,34 @@
             if (settings.areas) document.getElementById('bizAreas').value = settings.areas;
         }
         
+        // Auto-backup reminder
+        function checkBackupReminder() {
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            const now = new Date();
+            const daysSinceBackup = lastBackup ? Math.floor((now - new Date(lastBackup)) / (1000 * 60 * 60 * 24)) : 999;
+            
+            if (daysSinceBackup >= 7) {
+                // Show reminder banner
+                const banner = document.createElement('div');
+                banner.className = 'bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4';
+                banner.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-yellow-700">Backup Reminder</p>
+                            <p class="text-sm text-yellow-600">It's been ${daysSinceBackup === 999 ? 'a while' : daysSinceBackup + ' days'} since your last backup.</p>
+                        </div>
+                        <button onclick="exportAllData(); this.parentElement.parentElement.remove();" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition">Backup Now</button>
+                    </div>
+                `;
+                
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent && !document.getElementById('backupBanner')) {
+                    banner.id = 'backupBanner';
+                    mainContent.insertBefore(banner, mainContent.firstChild);
+                }
+            }
+        }
+        
         // Data management
         function exportAllData() {
             const data = {
@@ -625,6 +660,13 @@
             a.href = url;
             a.download = `emeralds-cuts-backup-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
+            
+            // Save backup date
+            localStorage.setItem('lastBackupDate', new Date().toISOString());
+            
+            // Remove reminder if exists
+            const banner = document.getElementById('backupBanner');
+            if (banner) banner.remove();
         }
         
         function importData(input) {
@@ -662,6 +704,11 @@
         // Load settings on page load
         loadSettings();
         
+        // Check backup reminder on dashboard
+        if (document.getElementById('dashboard').classList.contains('active')) {
+            checkBackupReminder();
+        }
+        
         // Load customers when tab is clicked
         const originalSwitchTab = switchTab;
         switchTab = function(tabName) {
@@ -671,6 +718,9 @@
             }
             if (tabName === 'settings') {
                 loadSettings();
+            }
+            if (tabName === 'dashboard') {
+                checkBackupReminder();
             }
         };
     </script>
