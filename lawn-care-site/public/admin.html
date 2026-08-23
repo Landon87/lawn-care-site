@@ -79,8 +79,8 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-500">Contacted</p>
-                                    <p class="text-2xl font-bold text-gray-800" id="contactedCount">0</p>
+                                    <p class="text-sm text-gray-500">This Week</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="thisWeekCount">0</p>
                                 </div>
                                 <div class="bg-purple-500 p-3 rounded-lg text-white">📈</div>
                             </div>
@@ -88,8 +88,8 @@
                         <div class="bg-white rounded-xl shadow-sm p-6 card-hover">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-500">Scheduled</p>
-                                    <p class="text-2xl font-bold text-gray-800" id="scheduledCount">0</p>
+                                    <p class="text-sm text-gray-500">Conversion Rate</p>
+                                    <p class="text-2xl font-bold text-gray-800" id="conversionRate">0%</p>
                                 </div>
                                 <div class="bg-orange-500 p-3 rounded-lg text-white">⏱️</div>
                             </div>
@@ -342,11 +342,18 @@
                 </tr>
             `).join('');
             
+            // Calculate stats
+            const now = new Date();
+            const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            const thisWeek = submissions.filter(s => new Date(s.date) >= oneWeekAgo);
+            const completed = submissions.filter(s => s.status === 'completed').length;
+            const conversionRate = submissions.length > 0 ? Math.round((completed / submissions.length) * 100) : 0;
+            
             // Update dashboard stats
             document.getElementById('totalSubmissions').textContent = submissions.length;
             document.getElementById('newLeads').textContent = submissions.filter(s => s.status === 'new').length;
-            document.getElementById('contactedCount').textContent = submissions.filter(s => s.status === 'contacted').length;
-            document.getElementById('scheduledCount').textContent = submissions.filter(s => s.status === 'scheduled').length;
+            document.getElementById('thisWeekCount').textContent = thisWeek.length;
+            document.getElementById('conversionRate').textContent = conversionRate + '%';
             
             // Update recent submissions table on dashboard
             const recentTable = document.getElementById('recentSubmissionsTable');
