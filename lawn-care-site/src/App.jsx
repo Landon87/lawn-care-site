@@ -1,8 +1,26 @@
 import { useState, Suspense, lazy, useEffect } from 'react'
-import { Phone, Mail, MapPin, Clock, CheckCircle, Calendar, Menu, X } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, CheckCircle, Calendar, Menu, X, Loader2, Leaf, Shield, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createBooking, getSettings, getPricing } from './lib/supabase'
 
 const GrassBackground = lazy(() => import('./components/GrassBackground'))
+
+// Default business info (fallback if Supabase fails)
+const DEFAULT_BUSINESS = {
+  phone: '(904) 575-7836',
+  email: 'contactus@emeraldscuts.com',
+  hours: 'Mon-Sat: 8AM - 6PM',
+  address: 'Jacksonville, FL'
+}
+
+// Default pricing (admin can update these in settings later)
+const DEFAULT_PRICING = [
+  { service: 'Tree & Shrub Care', description: 'Per visit', price: '$75', id: 'tree-shrub' },
+  { service: 'Seasonal Cleanup', description: 'Spring & Fall', price: '$125', id: 'seasonal' },
+  { service: 'Lawn Mowing', description: 'Starting price, varies by yard size', price: '$49+', id: 'mowing' },
+  { service: 'Fertilization', description: 'Seasonal treatments', price: '$55+', id: 'fertilization' },
+  { service: 'Landscaping', description: 'Contact us for estimate', price: 'Custom Quote', id: 'landscaping' }
+]
 
 // Animation variants
 const fadeInUp = {
@@ -38,6 +56,7 @@ function BookingForm() {
     name: '',
     phone: '',
     email: '',
+    preferredDate: '',
     propertyType: '',
     location: '',
     consultation: '',
@@ -45,6 +64,8 @@ function BookingForm() {
     notes: ''
   })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [errors, setErrors] = useState({})
 
   const formatPhoneNumber = (value) => {
@@ -68,6 +89,7 @@ function BookingForm() {
     if (!formData.propertyType) newErrors.propertyType = 'Please select a property type'
     if (!formData.location) newErrors.location = 'Please select your area'
     if (!formData.consultation) newErrors.consultation = 'Please select a consultation preference'
+    if (!formData.preferredDate) newErrors.preferredDate = 'Please select a preferred date'
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -91,39 +113,34 @@ function BookingForm() {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!validateForm()) return
     
-    const subject = `New Consultation Request from ${formData.name}`
-    const body = `
-Name: ${formData.name}
-Phone: ${formData.phone}
-Email: ${formData.email}
-Property Type: ${formData.propertyType}
-Location: ${formData.location}
-Consultation Preference: ${formData.consultation}
-Interested in Maintenance: ${formData.maintenance ? 'Yes' : 'No'}
-
-Additional Notes:
-${formData.notes}
-    `.trim()
-
-    // Store in localStorage for admin dashboard
-    const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]')
-    submissions.push({
-      id: Date.now(),
-      ...formData,
-      date: new Date().toISOString(),
-      status: 'new'
-    })
-    localStorage.setItem('bookingSubmissions', JSON.stringify(submissions))
+    setSubmitting(true)
+    setSubmitError('')
     
-    // Also send email
-    window.location.href = `mailto:makersmarg79@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    
-    setSubmitted(true)
+    try {
+      // Save to Supabase
+      await createBooking(formData)
+      
+      // Also keep localStorage as fallback
+      const submissions = JSON.parse(localStorage.getItem('bookingSubmissions') || '[]')
+      submissions.push({
+        id: Date.now(),
+        ...formData,
+        date: new Date().toISOString(),
+        status: 'new'
+      })
+      localStorage.setItem('bookingSubmissions', JSON.stringify(submissions))
+      
+      setSubmitted(true)
+    } catch (err) {
+      console.error('Booking error:', err)
+      setSubmitError('Something went wrong. Please try again or call us directly.')
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -142,10 +159,10 @@ ${formData.notes}
           <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
         </motion.div>
         <h3 className="text-2xl font-bold text-emerald-900 mb-2">Request Sent!</h3>
-        <p className="text-gray-600 mb-4">Your email client should open with the details.</p>
-        <a href="mailto:makersmarg79@gmail.com" className="text-emerald-600 font-semibold hover:underline">
-          makersmarg79@gmail.com
-        </a>
+        <p className="text-gray-600 mb-4">We'll get back to you within 24 hours.</p>
+        <p className="text-emerald-600 font-semibold">
+          📧 confirmation sent to our team
+        </p>
       </motion.div>
     )
   }
@@ -184,7 +201,7 @@ ${formData.notes}
             required
             maxLength={14}
             className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition ${errors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
-            placeholder="(904) 555-0123" 
+            placeholder="(904) 575-7836" 
           />
           {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
         </motion.div>
@@ -203,30 +220,45 @@ ${formData.notes}
         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
       </motion.div>
       
-      <motion.div variants={fadeInUp}>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Property Type *</label>
-        {errors.propertyType && <p className="text-red-500 text-xs mb-2">{errors.propertyType}</p>}
-        <div className="flex gap-4">
-          {['Residential', 'Commercial'].map((type) => (
-            <motion.label 
-              key={type}
-              className="flex items-center gap-2 cursor-pointer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <input 
-                type="radio" 
-                name="propertyType" 
-                value={type.toLowerCase()} 
-                checked={formData.propertyType === type.toLowerCase()}
-                onChange={handleChange}
-                required
-                className="text-emerald-500" 
-              />
-              <span>{type}</span>
-            </motion.label>
-          ))}
-        </div>
+      <motion.div className="grid md:grid-cols-2 gap-6" variants={fadeInUp}>
+        <motion.div whileHover={{ scale: 1.02 }}>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Date *</label>
+          <input 
+            type="date" 
+            name="preferredDate"
+            value={formData.preferredDate}
+            onChange={handleChange}
+            required
+            min={new Date().toISOString().split('T')[0]}
+            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition ${errors.preferredDate ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+          />
+          {errors.preferredDate && <p className="text-red-500 text-xs mt-1">{errors.preferredDate}</p>}
+        </motion.div>
+        <motion.div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Property Type *</label>
+          {errors.propertyType && <p className="text-red-500 text-xs mb-2">{errors.propertyType}</p>}
+          <div className="flex gap-4">
+            {['Residential', 'Commercial'].map((type) => (
+              <motion.label 
+                key={type}
+                className="flex items-center gap-2 cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <input 
+                  type="radio" 
+                  name="propertyType" 
+                  value={type.toLowerCase()} 
+                  checked={formData.propertyType === type.toLowerCase()}
+                  onChange={handleChange}
+                  required
+                  className="text-emerald-500" 
+                />
+                <span>{type}</span>
+              </motion.label>
+            ))}
+          </div>
+        </motion.div>
       </motion.div>
       
       <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
@@ -296,17 +328,31 @@ ${formData.notes}
         ></textarea>
       </motion.div>
       
+      {submitError && (
+        <motion.p className="text-red-500 text-sm text-center" variants={fadeInUp}>
+          {submitError}
+        </motion.p>
+      )}
+      
       <motion.button 
         type="submit" 
-        className="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold hover:bg-emerald-600 transition"
+        disabled={submitting}
+        className="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         variants={fadeInUp}
-        whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(50,120,45,0.5)' }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: submitting ? 1 : 1.02, boxShadow: '0 0 30px rgba(50,120,45,0.5)' }}
+        whileTap={{ scale: submitting ? 1 : 0.98 }}
       >
-        Request Free Estimate
+        {submitting ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Sending...
+          </>
+        ) : (
+          'Request Free Estimate'
+        )}
       </motion.button>
       
-      <p className="text-xs text-gray-500 text-center">Or email us directly at <a href="mailto:makersmarg79@gmail.com" className="text-emerald-600 hover:underline">makersmarg79@gmail.com</a></p>
+      <p className="text-xs text-gray-500 text-center">Or email us directly at <a href={`mailto:${business.email}`} className="text-emerald-600 hover:underline">{business.email}</a></p>
     </motion.form>
   )
 }
@@ -359,6 +405,9 @@ function App() {
   const [hoveredService, setHoveredService] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('')
+  const [business, setBusiness] = useState(DEFAULT_BUSINESS)
+  const [pricing, setPricing] = useState(DEFAULT_PRICING)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
@@ -366,6 +415,43 @@ function App() {
   }
 
   const navItems = ['Services', 'Pricing', 'Service Area', 'About', 'Book', 'Contact']
+
+  // Load business settings from Supabase
+  useEffect(() => {
+    async function loadBusinessSettings() {
+      try {
+        const settings = await getSettings()
+        if (settings) {
+          setBusiness({
+            phone: settings.phone || DEFAULT_BUSINESS.phone,
+            email: settings.email || DEFAULT_BUSINESS.email,
+            hours: settings.hours || DEFAULT_BUSINESS.hours,
+            address: settings.address || DEFAULT_BUSINESS.address
+          })
+        }
+      } catch (err) {
+        console.log('Using default business settings')
+      }
+
+      // Load pricing from Supabase
+      try {
+        const pricingData = await getPricing()
+        if (pricingData && pricingData.length > 0) {
+          setPricing(pricingData.map(p => ({
+            service: p.service,
+            description: p.description,
+            price: p.price,
+            id: p.id
+          })))
+        }
+      } catch (err) {
+        console.log('Using default pricing')
+      }
+
+      setSettingsLoaded(true)
+    }
+    loadBusinessSettings()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -671,8 +757,8 @@ function App() {
             viewport={{ once: true }}
             variants={fadeInUp}
           >
-            <h2 className="text-4xl font-bold text-emerald-900 mb-4">Pricing</h2>
-            <p className="text-gray-600">Straightforward pricing for quality lawn care.</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-emerald-900 mb-4">Pricing</h2>
+            <p className="text-gray-600 text-sm sm:text-base">Straightforward pricing for quality lawn care.</p>
           </motion.div>
           
           <motion.div 
@@ -682,27 +768,22 @@ function App() {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {[
-              { service: 'Tree & Shrub Care', desc: 'Per visit', price: '$75' },
-              { service: 'Seasonal Cleanup', desc: 'Spring & Fall', price: '$125' },
-              { service: 'Lawn Mowing', desc: 'Starting price, varies by yard size', price: '$49+' },
-              { service: 'Fertilization', desc: 'Seasonal treatments', price: '$55+' },
-              { service: 'Landscaping', desc: 'Contact us for estimate', price: 'Custom Quote' }
-            ].map((item, i) => (
+            {pricing.map((item, i) => (
               <motion.div
                 key={item.service}
-                className={`flex items-center justify-between p-6 ${i !== 4 ? 'border-b border-gray-100' : ''} hover:bg-emerald-50/50 transition`}
+                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 ${i !== pricing.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-emerald-50/50 transition gap-2 sm:gap-0`}
                 variants={fadeInUp}
                 whileHover={{ x: 5 }}
               >
-                <div>
-                  <h3 className="text-lg font-bold text-emerald-900">{item.service}</h3>
-                  <p className="text-sm text-gray-500">{item.desc}</p>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base sm:text-lg font-bold text-emerald-900">{item.service}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">{item.description || item.desc}</p>
                 </div>
-                <span className="text-2xl font-bold text-emerald-600 whitespace-nowrap ml-4">{item.price}</span>
+                <span className="text-xl sm:text-2xl font-bold text-emerald-600 whitespace-nowrap sm:ml-4">{item.price}</span>
               </motion.div>
             ))}
           </motion.div>
+
           
           <motion.p 
             className="text-center text-sm text-gray-500 mt-6"
@@ -765,20 +846,55 @@ function App() {
         </div>
       </section>
 
-      {/* About */}
+      {/* About / Why Choose Us */}
       <section id="about" className="py-20 px-4 text-white relative" style={{ background: 'rgba(10,80,26,0.95)', zIndex: 2 }}>
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeInUp}
+            className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-6">Why Choose Emeralds Cuts?</h2>
+            <h2 className="text-4xl font-bold mb-4">Why Choose Emeralds Cuts?</h2>
+            <p className="text-emerald-200 max-w-2xl mx-auto">Professional lawn care with a personal touch. We treat every yard like it's our own.</p>
           </motion.div>
           
           <motion.div 
-            className="grid md:grid-cols-3 gap-8 mt-12"
+            className="grid md:grid-cols-3 gap-8"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {[
+              { icon: Leaf, title: 'Eco-Friendly', desc: 'Safe, sustainable practices for your family and pets' },
+              { icon: Shield, title: 'Licensed & Insured', desc: 'Full coverage protection for your peace of mind' },
+              { icon: Star, title: 'Satisfaction Guaranteed', desc: 'Not happy? We\'ll make it right, no questions asked' }
+            ].map((item, i) => (
+              <motion.div 
+                key={item.title}
+                variants={fadeInUp}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center"
+              >
+                <motion.div 
+                  className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4"
+                  initial={{ scale: 0 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.2, type: 'spring', stiffness: 200 }}
+                >
+                  <item.icon className="w-8 h-8 text-white" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                <p className="text-emerald-200 text-sm">{item.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+          
+          <motion.div 
+            className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto"
             variants={staggerContainer}
             initial="hidden"
             whileInView="visible"
@@ -792,7 +908,8 @@ function App() {
               <motion.div 
                 key={stat.label}
                 variants={scaleIn}
-                whileHover={{ scale: 1.1, y: -5 }}
+                whileHover={{ scale: 1.1 }}
+                className="text-center"
               >
                 <motion.div 
                   className="text-4xl font-bold text-emerald-300 mb-2"
@@ -803,7 +920,7 @@ function App() {
                 >
                   {stat.number}
                 </motion.div>
-                <p>{stat.label}</p>
+                <p className="text-emerald-200 text-sm">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -851,10 +968,10 @@ function App() {
               viewport={{ once: true }}
             >
               {[
-                { icon: Phone, label: 'Phone', value: '(904) 555-0123' },
-                { icon: Mail, label: 'Email', value: 'makersmarg79@gmail.com' },
-                { icon: MapPin, label: 'Location', value: 'Jacksonville, FL' },
-                { icon: Clock, label: 'Hours', value: 'Mon-Sat: 8AM - 6PM' }
+                { icon: Phone, label: 'Phone', value: business.phone },
+                { icon: Mail, label: 'Email', value: business.email },
+                { icon: MapPin, label: 'Location', value: business.address },
+                { icon: Clock, label: 'Hours', value: business.hours }
               ].map((item, i) => (
                 <motion.div 
                   key={item.label}
@@ -926,7 +1043,7 @@ function App() {
                   Schedule Now →
                 </motion.button>
                 
-                <p className="text-emerald-200 text-xs text-center mt-4">Or call us at (904) 555-0123</p>
+                <p className="text-emerald-200 text-xs text-center mt-4">Or call us at {business.phone}</p>
               </div>
             </motion.div>
           </div>
